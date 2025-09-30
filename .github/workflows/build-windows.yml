@@ -32,13 +32,14 @@ jobs:
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
 
-      - name: Build libiio (minimal features)
+      - name: Build libiio (backends disabled to bypass checks)
         shell: msys2 {0}
         env:
           PKG_CONFIG_PATH: /mingw64/lib/pkgconfig
           CMAKE_PREFIX_PATH: /mingw64
         run: |
           set -e
+          rm -rf libiio_source
           git clone https://github.com/analogdevicesinc/libiio.git libiio_source
           cd libiio_source
           mkdir build
@@ -46,9 +47,11 @@ jobs:
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/mingw64 \
-            -DDISABLE_DNS_SD=ON \
-            -DDISABLE_IPV6=ON \
-            -DDISABLE_USB_BACKEND=ON \
+            -DWITH_NETWORK_BACKEND=OFF \
+            -DWITH_USB_BACKEND=OFF \
+            -DWITH_SERIAL_BACKEND=OFF \
+            -DWITH_LOCAL_BACKEND=OFF \
+            -DHAVE_DNS_SD=OFF \
             ..
           ninja
           ninja install
