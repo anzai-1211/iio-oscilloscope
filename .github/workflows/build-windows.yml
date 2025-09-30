@@ -1,7 +1,7 @@
 name: Build Windows (MSYS2 MinGW64)
 
 on:
-  workflow_dispatch:   # 手動で実行したときだけ動く（通知が増えない）
+  workflow_dispatch:
 
 jobs:
   build:
@@ -31,7 +31,7 @@ jobs:
             mingw-w64-x86_64-libzip
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
-            ntldd-git        # ← ここを修正（ntldd → ntldd-git）
+            ntldd-git
 
       - name: Build libiio
         shell: msys2 {0}
