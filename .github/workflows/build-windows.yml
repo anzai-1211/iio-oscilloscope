@@ -39,9 +39,10 @@ jobs:
           CMAKE_PREFIX_PATH: /mingw64
         run: |
           set -e
-          git clone https://github.com/analogdevicesinc/libiio.git
-          cd libiio
-          mkdir build    cd build
+          git clone https://github.com/analogdevicesinc/libiio.git libiio_source
+          cd libiio_source
+          mkdir build
+          cd build
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/mingw64 \
@@ -54,10 +55,17 @@ jobs:
 
       - name: Build iio-oscilloscope
         shell: msys2 {0}
+        env:
+          PKG_CONFIG_PATH: /mingw64/lib/pkgconfig
+          CMAKE_PREFIX_PATH: /mingw64
         run: |
           set -e
-          mkdir -p build && cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/mingw64 ..
+          mkdir build_oscilloscope
+          cd build_oscilloscope
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/mingw64 \
+            ..
           ninja
           ninja install
 
