@@ -47,6 +47,12 @@ set(PLUGINS
 	adrv9002
 	cf_axi_tdd
 	xmw
+	carrierboard_ad9361_0
+	carrierboard_ad9361_adv_0
+	carrierboard_ad9361_1
+	carrierboard_ad9361_adv_1
+	carrierboard_ad9361_2
+	carrierboard_ad9361_adv_2
 )
 
 set(LIBAD9166_PLUGINS cn0511)
@@ -55,6 +61,12 @@ set(LIBAD9361_PLUGINS
 	fmcomms2
 	fmcomms2_adv
 	spectrum_analyzer
+	carrierboard_ad9361_0
+	carrierboard_ad9361_adv_0
+	carrierboard_ad9361_1
+	carrierboard_ad9361_adv_1
+	carrierboard_ad9361_2
+	carrierboard_ad9361_adv_2
 )
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
