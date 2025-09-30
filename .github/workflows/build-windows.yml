@@ -46,9 +46,9 @@ jobs:
           cmake -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_INSTALL_PREFIX=/mingw64 \
-            -DHAVE_DNS_SD=OFF \
-            -DWITH_IPV6=OFF \
-            -DWITH_USB_BACKEND=OFF \
+            -DDISABLE_DNS_SD=ON \
+            -DDISABLE_IPV6=ON \
+            -DDISABLE_USB_BACKEND=ON \
             ..
           ninja
           ninja install
