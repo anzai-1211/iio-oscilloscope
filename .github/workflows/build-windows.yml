@@ -1,7 +1,7 @@
 name: Build Windows (MSYS2 MinGW64)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # 手動実行のみ
 
 jobs:
   build:
@@ -32,11 +32,6 @@ jobs:
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
 
-      - name: Install ntldd (from MSYS repo)
-        shell: msys2 {0}
-        run: |
-          pacman --noconfirm -S --needed msys/ntldd
-
       - name: Build libiio
         shell: msys2 {0}
         run: |
@@ -57,27 +52,45 @@ jobs:
           ninja
           ninja install
 
-      - name: Package portable bundle
+      - name: Package portable bundle (without ntldd)
         shell: msys2 {0}
         run: |
           set -e
           DEST=/c/_pkg/iioosc
-          mkdir -p $DEST/bin $DEST/plugins $DEST/share/glib-2.0/schemas
+          mkdir -p "$DEST/bin" "$DEST/plugins" "$DEST/share/glib-2.0/schemas"
 
           # 本体EXE
-          cp -f /mingw64/bin/iio-oscilloscope.exe $DEST/
+          cp -f /mingw64/bin/iio-oscilloscope.exe "$DEST/"
 
-          # 依存DLLを収集（ntlddを使う）
-          ntldd -R /mingw64/bin/iio-oscilloscope.exe | awk '/mingw64/ {print $3}' | sort -u | xargs -I{} cp -u {} $DEST/bin/ || true
+          # 依存DLL名をobjdumpで抽出してコピー（一次収集）
+          for d in $(objdump -p /mingw64/bin/iio-oscilloscope.exe | awk '/DLL Name/ {print $3}'); do
+            if [ -f "/mingw64/bin/$d" ]; then
+              cp -u "/mingw64/bin/$d" "$DEST/bin/" || true
+            fi
+          done
+
+          # よく使うGTK/GLib等のDLLを追加収集（不足防止）
+          for pat in \
+            libgtk-3*.dll libgdk-3*.dll libglib-2.0*.dll libgobject-2.0*.dll libgio-2.0*.dll \
+            libpango-1.0*.dll libpangocairo-1.0*.dll libcairo*.dll libatk-1.0*.dll \
+            libfontconfig*.dll libfreetype*.dll libintl-8.dll zlib1.dll libwinpthread-1.dll \
+            libiio*.dll libfftw3*.dll libxml2*.dll libmatio*.dll libusb-1.0*.dll
+          do
+            for f in /mingw64/bin/$pat; do
+              if [ -f "$f" ]; then
+                cp -u "$f" "$DEST/bin/" || true
+              fi
+            done
+          done
 
           # プラグインDLL（あなたのCMake設定でインストールされるもの）
           if [ -d /mingw64/bin/plugins ]; then
-            cp -r /mingw64/bin/plugins/* $DEST/plugins/ || true
+            cp -r /mingw64/bin/plugins/* "$DEST/plugins/" || true
           fi
 
           # GTKのスキーマ
-          cp -r /mingw64/share/glib-2.0/schemas/*.xml $DEST/share/glib-2.0/schemas/ || true
-          glib-compile-schemas $DEST/share/glib-2.0/schemas || true
+          cp -r /mingw64/share/glib-2.0/schemas/*.xml "$DEST/share/glib-2.0/schemas/" || true
+          glib-compile-schemas "$DEST/share/glib-2.0/schemas" || true
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
