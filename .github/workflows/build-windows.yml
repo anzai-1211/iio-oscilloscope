@@ -1,30 +1,28 @@
 name: Build Windows (MSYS2 MinGW64)
 
 on:
-  push:            # 変更をGitHubに送ったら動く
-  pull_request:    # プルリク（変更の提案）が来たら動く
-  workflow_dispatch:  # 手動でも動かせる
+  workflow_dispatch:   # 手動で実行したときだけ動く（通知が増えない）
 
 jobs:
   build:
-    runs-on: windows-latest   # GitHubのWindowsマシンで実行
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout        # リポジトリの中身を取ってくる
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup MSYS2     # MSYS2を用意し、必要な道具を入れる
+      - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64    # MinGW64の世界で作業
-          update: true        # まずMSYS2を更新
-          path-type: strict   # PATHの混乱を防ぐ設定
-          install: |          # 必要なパッケージ一覧（まとめて入る）
+          msystem: MINGW64
+          update: true
+          path-type: strict
+          install: |
             mingw-w64-x86_64-toolchain
             git
             cmake
             ninja
-            pkg-config
+            mingw-w64-x86_64-pkgconf
             mingw-w64-x86_64-gtk3
             mingw-w64-x86_64-glib2
             mingw-w64-x86_64-fftw
@@ -33,9 +31,9 @@ jobs:
             mingw-w64-x86_64-libzip
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
-            ntldd
+            ntldd-git        # ← ここを修正（ntldd → ntldd-git）
 
-      - name: Build libiio    # まず土台のlibiioをビルド・インストール
+      - name: Build libiio
         shell: msys2 {0}
         run: |
           set -e
@@ -46,7 +44,7 @@ jobs:
           ninja
           ninja install
 
-      - name: Build iio-oscilloscope   # 本体をビルド・インストール
+      - name: Build iio-oscilloscope
         shell: msys2 {0}
         run: |
           set -e
@@ -55,43 +53,26 @@ jobs:
           ninja
           ninja install
 
-      - name: Package portable bundle  # 実行に必要なファイルをひとまとめにする
+      - name: Package portable bundle
         shell: msys2 {0}
         run: |
           set -e
           DEST=/c/_pkg/iioosc
           mkdir -p $DEST/bin $DEST/plugins $DEST/share/glib-2.0/schemas
-
-          # 本体EXE
           cp -f /mingw64/bin/iio-oscilloscope.exe $DEST/
-
-          # 依存DLLを収集（EXEが必要とするDLLをコピー）
+          # 依存DLLを収集（/mingw64配下のDLLをコピー）
           ntldd -R /mingw64/bin/iio-oscilloscope.exe | awk '/mingw64/ {print $3}' | sort -u | xargs -I{} cp -u {} $DEST/bin/ || true
-
-          # プラグインDLL（作られていれば）
+          # プラグインDLL（あなたのCMake設定でインストールされるもの）
           if [ -d /mingw64/bin/plugins ]; then
             cp -r /mingw64/bin/plugins/* $DEST/plugins/ || true
           fi
-
-          # GTKが必要とする設定スキーマ
+          # GTKのスキーマ
           cp -r /mingw64/share/glib-2.0/schemas/*.xml $DEST/share/glib-2.0/schemas/ || true
           glib-compile-schemas $DEST/share/glib-2.0/schemas || true
 
-          # 起動用バッチ（PATH等を設定してから起動）
-          cat > /c/_pkg/run-iio-oscilloscope.bat << 'EOF'
-          @echo off
-          setlocal
-          set BASE=%~dp0iioosc
-          set PATH=%BASE%\bin;%PATH%
-          set GSETTINGS_SCHEMA_DIR=%BASE%\share\glib-2.0\schemas
-          "%BASE%\iio-oscilloscope.exe"
-          endlocal
-          EOF
-
-      - name: Upload artifact   # まとめたフォルダをZIPとして保存（ダウンロード可能に）
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: iio-oscilloscope-portable
           path: |
             C:\_pkg\iioosc\
-            C:\_pkg\run-iio-oscilloscope.bat
