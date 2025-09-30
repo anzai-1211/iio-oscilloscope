@@ -39,7 +39,13 @@ jobs:
           git clone https://github.com/analogdevicesinc/libiio.git
           cd libiio
           mkdir build && cd build
-          cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/mingw64 ..
+          cmake -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/mingw64 \
+            -DHAVE_DNS_SD=OFF \
+            -DHAVE_IPV6=OFF \
+            -DWITH_USB_BACKEND=OFF \
+            ..
           ninja
           ninja install
 
