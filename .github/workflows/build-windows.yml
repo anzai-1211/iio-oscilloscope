@@ -32,11 +32,10 @@ jobs:
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
 
-      # （必要なら）MSYSパッケージの ntldd を別ステップで導入
-      - name: Install ntldd (MSYS package)
+      - name: Install ntldd (from MSYS repo)
         shell: msys2 {0}
         run: |
-          pacman --noconfirm -S --needed ntldd-git
+          pacman --noconfirm -S --needed msys/ntldd
 
       - name: Build libiio
         shell: msys2 {0}
