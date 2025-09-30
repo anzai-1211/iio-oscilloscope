@@ -31,7 +31,12 @@ jobs:
             mingw-w64-x86_64-libzip
             mingw-w64-x86_64-libusb
             mingw-w64-x86_64-zlib
-            ntldd-git
+
+      # （必要なら）MSYSパッケージの ntldd を別ステップで導入
+      - name: Install ntldd (MSYS package)
+        shell: msys2 {0}
+        run: |
+          pacman --noconfirm -S --needed ntldd-git
 
       - name: Build libiio
         shell: msys2 {0}
@@ -59,13 +64,18 @@ jobs:
           set -e
           DEST=/c/_pkg/iioosc
           mkdir -p $DEST/bin $DEST/plugins $DEST/share/glib-2.0/schemas
+
+          # 本体EXE
           cp -f /mingw64/bin/iio-oscilloscope.exe $DEST/
-          # 依存DLLを収集（/mingw64配下のDLLをコピー）
+
+          # 依存DLLを収集（ntlddを使う）
           ntldd -R /mingw64/bin/iio-oscilloscope.exe | awk '/mingw64/ {print $3}' | sort -u | xargs -I{} cp -u {} $DEST/bin/ || true
+
           # プラグインDLL（あなたのCMake設定でインストールされるもの）
           if [ -d /mingw64/bin/plugins ]; then
             cp -r /mingw64/bin/plugins/* $DEST/plugins/ || true
           fi
+
           # GTKのスキーマ
           cp -r /mingw64/share/glib-2.0/schemas/*.xml $DEST/share/glib-2.0/schemas/ || true
           glib-compile-schemas $DEST/share/glib-2.0/schemas || true
